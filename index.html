@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artemis II | Mission Telemetry Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #05070a;
+            --surface: #0f1218;
+            --surface-accent: #1a1f29;
+            --primary: #4f98a3;
+            --primary-glow: rgba(79, 152, 163, 0.3);
+            --accent: #fdab43;
+            --success: #6daa45;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-main);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(15, 20, 30, 1) 0%, rgba(5, 7, 10, 1) 100%),
+                url('https://www.transparenttextures.com/patterns/stardust.png');
+        }
+
+        /* Layout */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 100vh;
+            max-height: 100vh;
+        }
+
+        /* Sidebar */
+        aside {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            overflow-y: auto;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .brand h1 {
+            font-size: 1.2rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #fff;
+        }
+
+        .brand p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .meta-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .meta-card {
+            background: var(--surface-accent);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .meta-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .meta-value {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--primary);
+        }
+
+        /* Main Content */
+        main {
+            padding: 2rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .header-title h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge {
+            background: rgba(79, 152, 163, 0.1);
+            color: var(--primary);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid var(--primary);
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+
+        /* Grid Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .stat-card {
+            background: var(--surface);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--primary);
+        }
+
+        .stat-val {
+            font-family: var(--font-mono);
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* Visualizer Section */
+        .viz-container {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1.5rem;
+            min-height: 500px;
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header h3 {
+            font-size: 1rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .canvas-wrap {
+            flex-grow: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1a1f29 0%, #0f1218 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .scrubber-box {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        input[type=range] {
+            width: 100%;
+            height: 6px;
+            background: var(--surface-accent);
+            border-radius: 5px;
+            appearance: none;
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .btn-play {
+            background: var(--primary);
+            color: var(--bg);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 100%;
+        }
+
+        .btn-play:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 20px var(--primary-glow);
+        }
+
+        .telemetry-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .telemetry-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.8rem;
+            background: var(--surface-accent);
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .tel-label { color: var(--text-muted); font-size: 0.8rem; }
+        .tel-val { font-family: var(--font-mono); font-weight: 600; font-size: 0.9rem; color: #fff; }
+
+        footer {
+            margin-top: auto;
+            padding: 2rem 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard { grid-template-columns: 1fr; }
+            aside { display: none; }
+            .viz-container { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 640px) {
+            main { padding: 1rem; }
+            .header-title h2 { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <aside>
+            <div class="logo-container">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                        <path d="M2 12h20"></path>
+                    </svg>
+                </div>
+                <div class="brand">
+                    <h1>ARTEMIS II</h1>
+                    <p>NASA OEM Telemetry</p>
+                </div>
+            </div>
+
+            <div class="meta-group">
+                <div class="meta-card">
+                    <div class="meta-label">Mission Object</div>
+                    <div class="meta-value">EM2 / Spacecraft 24</div>
+                </div>
+                <div class="meta-card">
+                    <div class="meta-label">Originator</div>
+                    <div class="meta-value">NASA/JSC/FDO</div>
+                </div>
+                <div class="meta-card">
+                    <div class="meta-label">Coordinate Frame</div>
+                    <div class="meta-value">Earth-Centered EME2000</div>
+                </div>
+                <div class="meta-card">
+                    <div class="meta-label">Ephemeris Window</div>
+                    <div class="meta-value">Apr 05 - Apr 10, 2026</div>
+                </div>
+            </div>
+
+            <div class="meta-card" style="margin-top: auto; background: transparent; border: 1px dashed var(--border);">
+                <div class="meta-label">Technical Note</div>
+                <p style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                    Rendering XY plane projection of CCSDS state vectors. Scale normalized for high-earth orbit visualization.
+                </p>
+            </div>
+        </aside>
+
+        <main>
+            <div class="header">
+                <div class="header-title">
+                    <span class="badge">LIVE TRACKING SIMULATION</span>
+                    <h2>Mission Control Dashboard</h2>
+                    <p style="color: var(--text-muted);">Real-time Orion trajectory visualization and state vector analysis.</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Apogee Distance</div>
+                    <div class="stat-val" id="peak-dist">413,144<span style="font-size: 0.8rem; color: var(--primary);"> KM</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Current Velocity</div>
+                    <div class="stat-val" id="live-speed">0.00<span style="font-size: 0.8rem; color: var(--primary);"> KM/S</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Earth Separation</div>
+                    <div class="stat-val" id="live-dist">0<span style="font-size: 0.8rem; color: var(--primary);"> KM</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Reentry Velocity</div>
+                    <div class="stat-val">10.99<span style="font-size: 0.8rem; color: var(--primary);"> KM/S</span></div>
+                </div>
+            </div>
+
+            <div class="viz-container">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Trajectory Visualization</h3>
+                        <span id="status-tag" style="color: var(--success); font-size: 0.8rem; font-weight: bold; letter-spacing: 1px;">● SYSTEM READY</span>
+                    </div>
+                    <div class="canvas-wrap">
+                        <canvas id="orbitCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Mission Scrubber</h3>
+                    </div>
+                    <div class="controls">
+                        <div class="scrubber-box">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-muted);">
+                                <span>T+ 00:00:00</span>
+                                <span id="progress-val">Frame 0 / 701</span>
+                            </div>
+                            <input type="range" id="missionSlider" min="0" max="701" value="0">
+                            <button class="btn-play" id="playBtn">RUN MISSION SEQUENCE</button>
+                        </div>
+
+                        <div class="card-header" style="margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1.5rem;">
+                            <h3>Live Telemetry</h3>
+                        </div>
+                        <ul class="telemetry-list">
+                            <li class="telemetry-item">
+                                <span class="tel-label">Epoch</span>
+                                <span class="tel-val" id="tel-time">---</span>
+                            </li>
+                            <li class="telemetry-item">
+                                <span class="tel-label">X-Vector (J2000)</span>
+                                <span class="tel-val" id="tel-x">---</span>
+                            </li>
+                            <li class="telemetry-item">
+                                <span class="tel-label">Y-Vector (J2000)</span>
+                                <span class="tel-val" id="tel-y">---</span>
+                            </li>
+                            <li class="telemetry-item">
+                                <span class="tel-label">Mission Phase</span>
+                                <span class="tel-val" id="tel-phase" style="color: var(--accent);">INITIALIZING</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <footer>
+                © 2026 AINexForge. All rights reserved. Artemis II Data courtesy of NASA Open Data.
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        // Compact dataset sample
+        const TELEMETRY = [
+            {"t":"2026-04-05T04:35:05","x":-115297,"y":-260717,"dist":318922,"speed":0.88},
+            {"t":"2026-04-05T12:35:05","x":-118036,"y":-281514,"dist":342027,"speed":0.77},
+            {"t":"2026-04-06T00:37:15","x":-121098,"y":-308377,"dist":371898,"speed":0.64},
+            {"t":"2026-04-06T12:17:38","x":-123854,"y":-330077,"dist":396190,"speed":0.53},
+            {"t":"2026-04-06T23:05:38","x":-132021,"y":-343091,"dist":413143,"speed":0.41}, // Max Dist
+            {"t":"2026-04-07T12:41:38","x":-126896,"y":-323333,"dist":391821,"speed":0.54},
+            {"t":"2026-04-08T00:53:38","x":-113195,"y":-302681,"dist":366383,"speed":0.65},
+            {"t":"2026-04-08T12:39:17","x":-97353,"y":-278911,"dist":336890,"speed":0.78},
+            {"t":"2026-04-09T00:39:17","x":-78893,"y":-249531,"dist":300641,"speed":0.95},
+            {"t":"2026-04-09T12:51:17","x":-57674,"y":-212718,"dist":255675,"speed":1.16},
+            {"t":"2026-04-10T00:03:17","x":-35743,"y":-170274,"dist":204473,"speed":1.46},
+            {"t":"2026-04-10T12:03:17","x":-9182,"y":-109409,"dist":132317,"speed":2.06},
+            {"t":"2026-04-10T22:39:17","x":13497,"y":-17497,"dist":27898,"speed":5.17},
+            {"t":"2026-04-10T23:53:21","x":5691,"y":3937,"dist":6966,"speed":10.61}
+        ];
+
+        // Synthesize intermediate points for smooth animation
+        function interpolateData(data, steps = 50) {
+            let result = [];
+            for(let i=0; i<data.length-1; i++) {
+                for(let j=0; j<steps; j++) {
+                    const t = j / steps;
+                    result.push({
+                        x: data[i].x + (data[i+1].x - data[i].x) * t,
+                        y: data[i].y + (data[i+1].y - data[i].y) * t,
+                        dist: data[i].dist + (data[i+1].dist - data[i].dist) * t,
+                        speed: data[i].speed + (data[i+1].speed - data[i].speed) * t,
+                        t: data[i].t
+                    });
+                }
+            }
+            result.push(data[data.length-1]);
+            return result;
+        }
+
+        const fullSet = interpolateData(TELEMETRY, 50);
+        const totalFrames = fullSet.length;
+        
+        let currentIndex = 0;
+        let isPlaying = false;
+        let animationId = null;
+
+        const canvas = document.getElementById('orbitCanvas');
+        const ctx = canvas.getContext('2d');
+        const slider = document.getElementById('missionSlider');
+        const playBtn = document.getElementById('playBtn');
+
+        // UI Elements
+        const elTime = document.getElementById('tel-time');
+        const elX = document.getElementById('tel-x');
+        const elY = document.getElementById('tel-y');
+        const elPhase = document.getElementById('tel-phase');
+        const elLiveSpeed = document.getElementById('live-speed');
+        const elLiveDist = document.getElementById('live-dist');
+        const elProgress = document.getElementById('progress-val');
+
+        function resize() {
+            canvas.width = canvas.offsetWidth * window.devicePixelRatio;
+            canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            draw();
+        }
+
+        function draw() {
+            const w = canvas.width / window.devicePixelRatio;
+            const h = canvas.height / window.devicePixelRatio;
+            ctx.clearRect(0, 0, w, h);
+
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const scale = 0.0005; // Zoom factor
+
+            // Draw Reference Rings (Range Circles)
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            [100000, 200000, 300000, 400000].forEach(r => {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r * scale, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+
+            // Draw Earth
+            const gradient = ctx.createRadialGradient(centerX, centerY, 2, centerX, centerY, 15);
+            gradient.addColorStop(0, '#4f98a3');
+            gradient.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Trajectory Path
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(79, 152, 163, 0.3)';
+            ctx.setLineDash([5, 5]);
+            fullSet.forEach((p, i) => {
+                const px = centerX + p.x * scale;
+                const py = centerY + p.y * scale;
+                if(i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            });
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw Orion Position
+            const current = fullSet[currentIndex];
+            const ox = centerX + current.x * scale;
+            const oy = centerY + current.y * scale;
+
+            // Glow
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#fdab43';
+            ctx.fillStyle = '#fdab43';
+            ctx.beginPath();
+            ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Label
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px JetBrains Mono';
+            ctx.fillText('ORION MPCV', ox + 10, oy - 10);
+        }
+
+        function updateUI() {
+            const data = fullSet[currentIndex];
+            elTime.textContent = data.t.replace('T', ' ');
+            elX.textContent = Math.round(data.x).toLocaleString() + ' km';
+            elY.textContent = Math.round(data.y).toLocaleString() + ' km';
+            elLiveSpeed.innerHTML = data.speed.toFixed(2) + '<span style="font-size: 0.8rem; color: var(--primary);"> KM/S</span>';
+            elLiveDist.innerHTML = Math.round(data.dist).toLocaleString() + '<span style="font-size: 0.8rem; color: var(--primary);"> KM</span>';
+            elProgress.textContent = `Frame ${currentIndex} / ${totalFrames - 1}`;
+            
+            // Phase detection
+            if(data.dist > 380000) elPhase.textContent = "LUNAR FLYBY";
+            else if(currentIndex < totalFrames / 2) elPhase.textContent = "OUTBOUND TRANS-LUNAR";
+            else elPhase.textContent = "INBOUND REENTRY";
+
+            slider.value = currentIndex;
+            draw();
+        }
+
+        function step() {
+            if(!isPlaying) return;
+            currentIndex = (currentIndex + 1) % totalFrames;
+            updateUI();
+            animationId = requestAnimationFrame(step);
+        }
+
+        // Event Listeners
+        playBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            playBtn.textContent = isPlaying ? "PAUSE SEQUENCE" : "RUN MISSION SEQUENCE";
+            playBtn.style.background = isPlaying ? "var(--surface-accent)" : "var(--primary)";
+            playBtn.style.color = isPlaying ? "#fff" : "var(--bg)";
+            if(isPlaying) step();
+        });
+
+        slider.max = totalFrames - 1;
+        slider.addEventListener('input', (e) => {
+            currentIndex = parseInt(e.target.value);
+            updateUI();
+        });
+
+        window.addEventListener('resize', resize);
+        
+        // Init
+        resize();
+        updateUI();
+
+    </script>
+</body>
+</html>
